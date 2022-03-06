@@ -7,10 +7,10 @@ import { CreateUserDto } from './dto/create-user.dto'
 import { MailService } from '../mail/mail.service'
 import { UsersService } from '../users/users.service'
 import { BadRequestException } from '../exceptions/bad-request.exception'
-import { IUserData } from './interfaces/user-data.interface'
 import { SignInUserDto } from './dto/sign-in-user.dto'
 import { UserDocument } from '../users/schemas/user.schema'
 import { TokenService } from '../token/token.service'
+import { UserDataDto } from './dto/user-data.dto'
 
 @Injectable()
 export class AuthService {
@@ -20,7 +20,7 @@ export class AuthService {
     private readonly tokenService: TokenService,
   ) {}
 
-  async registration(createUserDto: CreateUserDto): Promise<IUserData> {
+  async registration(createUserDto: CreateUserDto): Promise<UserDataDto> {
     const candidate = await this.usersService.getUserByEmail(
       createUserDto.email,
     )
@@ -38,7 +38,7 @@ export class AuthService {
 
     await this.mailService.sendActivationMail(
       user.email,
-      `${process.env.apiUrl}/api/auth/activate/${activationLink}`, //TODO Доделать
+      `${process.env.apiUrl}/auth/activate/${activationLink}`,
     )
 
     const userData = await this.tokenService.setTokens(user)
@@ -46,7 +46,7 @@ export class AuthService {
     return userData
   }
 
-  async login(signInUserDto: SignInUserDto): Promise<IUserData> {
+  async login(signInUserDto: SignInUserDto): Promise<UserDataDto> {
     const user = await this.usersService.validateUser(signInUserDto)
     const userData = await this.tokenService.setTokens(user)
 
@@ -58,9 +58,19 @@ export class AuthService {
     return token
   }
 
-  async refresh(user: UserDocument): Promise<IUserData> {
+  async refresh(user: UserDocument): Promise<UserDataDto> {
     const userData = await this.tokenService.setTokens(user)
     return userData
+  }
+
+  async activate(link: string): Promise<void> {
+    const user = await this.usersService.findUserByActivationLink(link)
+    if (!user) {
+      throw new BadRequestException('Неккоректная ссылка активации')
+    }
+
+    user.isActivated = true
+    await user.save()
   }
 
   setCookie(res: Response, refreshToken): void {

@@ -3,12 +3,12 @@ import { Model, Types } from 'mongoose'
 import { UserDocument } from '../users/schemas/user.schema'
 import * as bcrypt from 'bcrypt'
 import { DeleteResult } from 'mongodb'
-import { IUserData } from '../auth/interfaces/user-data.interface'
 import { UserPayloadDto } from '../auth/dto/user-payload.dto'
 import { IJWTTokens } from '../auth/interfaces/jwt-tokens.interface'
 import { InjectModel } from '@nestjs/mongoose'
 import { Token, TokenDocument } from './schemas/token.schema'
 import { JwtService } from '@nestjs/jwt'
+import { UserDataDto } from '../auth/dto/user-data.dto'
 
 @Injectable()
 export class TokenService {
@@ -27,7 +27,7 @@ export class TokenService {
     return tokenData
   }
 
-  async setTokens(user: UserDocument): Promise<IUserData> {
+  async setTokens(user: UserDocument): Promise<UserDataDto> {
     const userPayloadDto = new UserPayloadDto(user)
     const tokens = await this.generateToken(userPayloadDto)
     await this.saveToken(tokens.refreshToken, userPayloadDto.id)

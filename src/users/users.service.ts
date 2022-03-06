@@ -13,6 +13,11 @@ import { CreateUserInterface } from '../auth/interfaces/create-user.interface'
 export class UsersService {
   constructor(@InjectModel(User.name) private userModel: Model<UserDocument>) {}
 
+  async findUserByActivationLink(link: string): Promise<UserDocument> {
+    const user = await this.userModel.findOne({ activationLink: link })
+    return user
+  }
+
   async getUserByEmail(email: string): Promise<UserDocument> {
     const user = await this.userModel.findOne({ email })
     return user
