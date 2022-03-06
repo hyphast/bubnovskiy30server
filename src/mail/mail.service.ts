@@ -5,7 +5,7 @@ import { MailerService } from '@nestjs-modules/mailer'
 export class MailService {
   constructor(private readonly mailerService: MailerService) {}
 
-  async sendActivationMail(to, link) {
+  async sendActivationMail(to: string, link: string): Promise<void> {
     await this.mailerService.sendMail({
       to,
       subject: 'Активация аккаунта на ' + process.env.apiUrl,

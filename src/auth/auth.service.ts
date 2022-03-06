@@ -1,28 +1,23 @@
-import { Model, Types } from 'mongoose'
+import { Injectable, UnauthorizedException } from '@nestjs/common'
+import * as bcrypt from 'bcrypt'
+import { Types } from 'mongoose'
 import { DeleteResult } from 'mongodb'
 import { Response } from 'express'
-import { Injectable, UnauthorizedException } from '@nestjs/common'
-import { InjectModel } from '@nestjs/mongoose'
-import * as bcrypt from 'bcrypt'
 import { CreateUserDto } from './dto/create-user.dto'
 import { MailService } from '../mail/mail.service'
 import { UsersService } from '../users/users.service'
 import { BadRequestException } from '../exceptions/bad-request.exception'
-import { JwtService } from '@nestjs/jwt'
-import { Token, TokenDocument } from './schemas/token.schema'
-import { IJWTTokens } from './interfaces/jwt-tokens.interface'
-import { UserPayloadDto } from './dto/user-payload.dto'
 import { IUserData } from './interfaces/user-data.interface'
 import { SignInUserDto } from './dto/sign-in-user.dto'
-import { User, UserDocument } from '../users/schemas/user.schema'
+import { UserDocument } from '../users/schemas/user.schema'
+import { TokenService } from '../token/token.service'
 
 @Injectable()
 export class AuthService {
   constructor(
-    @InjectModel(Token.name) private tokenModel: Model<TokenDocument>,
     private readonly mailService: MailService,
     private readonly usersService: UsersService,
-    private jwtService: JwtService,
+    private readonly tokenService: TokenService,
   ) {}
 
   async registration(createUserDto: CreateUserDto): Promise<IUserData> {
@@ -41,31 +36,30 @@ export class AuthService {
       createUserDto,
     )
 
-    // await this.mailService.sendActivationMail(
-    //   registerUserDto.email,
-    //   `${process.env.apiUrl}/api/auth/activate/${activationLink}`, //TODO Доделать
-    // )
+    await this.mailService.sendActivationMail(
+      user.email,
+      `${process.env.apiUrl}/api/auth/activate/${activationLink}`, //TODO Доделать
+    )
 
-    const userData = await this.setTokens(user)
+    const userData = await this.tokenService.setTokens(user)
 
     return userData
   }
 
   async login(signInUserDto: SignInUserDto): Promise<IUserData> {
     const user = await this.usersService.validateUser(signInUserDto)
-    const userData = await this.setTokens(user)
+    const userData = await this.tokenService.setTokens(user)
 
     return userData
   }
 
-  async logout(refreshToken: string): Promise<DeleteResult> {
-    const token = await this.removeToken(refreshToken)
+  async logout(id: Types.ObjectId): Promise<DeleteResult> {
+    const token = await this.tokenService.removeToken(id)
     return token
   }
 
-  async refresh(refreshToken: string, user: UserDocument): Promise<IUserData> {
-    const userData = await this.setTokens(user)
-
+  async refresh(user: UserDocument): Promise<IUserData> {
+    const userData = await this.tokenService.setTokens(user)
     return userData
   }
 
@@ -80,7 +74,7 @@ export class AuthService {
     refreshToken: string,
     id: Types.ObjectId,
   ): Promise<UserDocument> {
-    const tokenFromDB = await this.findToken(id)
+    const tokenFromDB = await this.tokenService.findToken(id)
     if (!tokenFromDB) {
       throw new UnauthorizedException()
     }
@@ -97,56 +91,5 @@ export class AuthService {
     const user = await this.usersService.findById(id)
 
     return user
-  }
-
-  async findToken(id: Types.ObjectId): Promise<TokenDocument> {
-    const tokenData = await this.tokenModel.findOne({ user: id })
-    return tokenData
-  }
-
-  async removeToken(refreshToken: string): Promise<DeleteResult> {
-    const tokenData = await this.tokenModel.deleteOne({ refreshToken })
-    return tokenData
-  }
-
-  async setTokens(user: UserDocument): Promise<IUserData> {
-    const userPayloadDto = new UserPayloadDto(user)
-    const tokens = await this.generateToken(userPayloadDto)
-    await this.saveToken(tokens.refreshToken, userPayloadDto.id)
-
-    return { ...tokens, user: userPayloadDto }
-  }
-
-  private async generateToken(user: UserPayloadDto): Promise<IJWTTokens> {
-    const payload = { ...user }
-
-    return {
-      accessToken: this.jwtService.sign(payload, {
-        expiresIn: '15s', //TODO 25m
-        secret: process.env.jwtAccessSecret,
-      }),
-      refreshToken: this.jwtService.sign(payload, {
-        expiresIn: '30s', //TODO 15d
-        secret: process.env.jwtRefreshSecret,
-      }),
-    }
-  }
-
-  private async saveToken(
-    refreshToken: string,
-    userId: Types.ObjectId,
-  ): Promise<TokenDocument> {
-    const tokenData = await this.tokenModel.findOne({ user: userId })
-    const hashedRefreshToken = await bcrypt.hash(refreshToken, 12)
-    if (tokenData) {
-      tokenData.refreshToken = hashedRefreshToken
-      return tokenData.save()
-    }
-
-    const token = await this.tokenModel.create({
-      user: userId,
-      refreshToken: hashedRefreshToken,
-    })
-    return token
   }
 }

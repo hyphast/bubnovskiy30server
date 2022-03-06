@@ -8,12 +8,15 @@ import {
   UseGuards,
 } from '@nestjs/common'
 import { DeleteResult } from 'mongodb'
-import { Response, Request } from 'express'
+import { Response } from 'express'
 import { CreateUserDto } from './dto/create-user.dto'
 import { AuthService } from './auth.service'
 import { IUserData } from './interfaces/user-data.interface'
 import { SignInUserDto } from './dto/sign-in-user.dto'
 import { JwtRefreshAuthGuard } from './guards/jwt-refresh-auth.guard'
+import { IRequestWithUser } from './interfaces/request-with-user'
+import { JwtAuthGuard } from './guards/jwt-auth.guard'
+import { IRequestWithUserPayload } from './interfaces/request-with-user-payload.dto'
 
 @Controller('auth')
 export class AuthController {
@@ -36,7 +39,7 @@ export class AuthController {
   async login(
     @Body() signInUserDto: SignInUserDto,
     @Res({ passthrough: true }) res: Response,
-  ) {
+  ): Promise<IUserData> {
     const userData = await this.authService.login(signInUserDto)
 
     this.authService.setCookie(res, userData.refreshToken)
@@ -44,14 +47,13 @@ export class AuthController {
     return userData
   }
 
-  //TODO Does he need a useGuard decorator here?
   @Post('logout')
+  @UseGuards(JwtAuthGuard)
   async logout(
-    @Req() req: Request,
+    @Req() req: IRequestWithUserPayload,
     @Res({ passthrough: true }) res: Response,
   ): Promise<DeleteResult> {
-    const { refreshToken } = req.cookies
-    const token = await this.authService.logout(refreshToken)
+    const token = await this.authService.logout(req.user.id)
 
     res.clearCookie('refreshToken')
 
@@ -61,11 +63,10 @@ export class AuthController {
   @Get('refresh')
   @UseGuards(JwtRefreshAuthGuard)
   async refresh(
-    @Req() req,
+    @Req() req: IRequestWithUser,
     @Res({ passthrough: true }) res: Response,
   ): Promise<IUserData> {
-    const { refreshToken } = req.cookies
-    const userData = await this.authService.refresh(refreshToken, req.user)
+    const userData = await this.authService.refresh(req.user)
 
     this.authService.setCookie(res, userData.refreshToken)
 

@@ -6,11 +6,10 @@ import { MailerModule } from '@nestjs-modules/mailer'
 import { ConfigModule } from '@nestjs/config'
 import { AuthController } from './auth/auth.controller'
 import { AuthModule } from './auth/auth.module'
-import { mailConfig } from './mail-config'
-import { UsersService } from './users/users.service'
 import { UsersController } from './users/users.controller'
 import { UsersModule } from './users/users.module'
 import { MailModule } from './mail/mail.module'
+import { TokenModule } from './token/token.module'
 
 @Module({
   imports: [
@@ -19,12 +18,26 @@ import { MailModule } from './mail/mail.module'
       isGlobal: true,
     }),
     MongooseModule.forRoot(process.env.mongoUri),
-    MailerModule.forRoot(mailConfig),
+    MailerModule.forRoot({
+      transport: {
+        host: process.env.smtpHost,
+        port: parseInt(process.env.smtpPort),
+        secure: false,
+        auth: {
+          user: process.env.smtpUser,
+          pass: process.env.smtpPassword,
+        },
+      },
+      defaults: {
+        from: process.env.smtpUser,
+      },
+    }),
     AuthModule,
     UsersModule,
     MailModule,
+    TokenModule,
   ],
   controllers: [AppController, AuthController, UsersController],
-  providers: [AppService, UsersService],
+  providers: [AppService],
 })
 export class AppModule {}
