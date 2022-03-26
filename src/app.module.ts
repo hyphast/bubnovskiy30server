@@ -1,15 +1,13 @@
 import { Module } from '@nestjs/common'
-import { AppController } from './app.controller'
-import { AppService } from './app.service'
 import { MongooseModule } from '@nestjs/mongoose'
 import { MailerModule } from '@nestjs-modules/mailer'
 import { ConfigModule } from '@nestjs/config'
-import { AuthController } from './auth/auth.controller'
 import { AuthModule } from './auth/auth.module'
-import { UsersController } from './users/users.controller'
 import { UsersModule } from './users/users.module'
 import { MailModule } from './mail/mail.module'
 import { TokenModule } from './token/token.module'
+import { AppointmentsModule } from './appointments/appointments.module'
+import { HandlersModule } from './handlers/handlers.module'
 
 @Module({
   imports: [
@@ -36,8 +34,10 @@ import { TokenModule } from './token/token.module'
     UsersModule,
     MailModule,
     TokenModule,
+    AppointmentsModule,
+    HandlersModule,
   ],
-  controllers: [AppController, AuthController, UsersController],
-  providers: [AppService],
+  controllers: [],
+  providers: [],
 })
 export class AppModule {}

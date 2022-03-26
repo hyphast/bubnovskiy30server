@@ -8,10 +8,16 @@ import { CreateUserDto } from '../auth/dto/create-user.dto'
 import { SignInUserDto } from '../auth/dto/sign-in-user.dto'
 import { BadRequestException } from '../exceptions/bad-request.exception'
 import { CreateUserInterface } from '../auth/interfaces/create-user.interface'
+import { IGetAllQueries } from '../handlers/interfaces/get-all-queries.interface'
+import { CommonHandler } from '../handlers/common.handler'
+import { IGetUsers } from './interfaces/get-users.interface'
 
 @Injectable()
 export class UsersService {
-  constructor(@InjectModel(User.name) private userModel: Model<UserDocument>) {}
+  constructor(
+    @InjectModel(User.name) private userModel: Model<UserDocument>,
+    private readonly commonHandler: CommonHandler,
+  ) {}
 
   async findUserByActivationLink(link: string): Promise<UserDocument> {
     const user = await this.userModel.findOne({ activationLink: link })
@@ -62,5 +68,35 @@ export class UsersService {
     })
 
     return { user, activationLink }
+  }
+
+  async getUsers(
+    filter: IGetAllQueries['filter'],
+    range: IGetAllQueries['range'],
+    sort: IGetAllQueries['sort'],
+  ): Promise<IGetUsers> {
+    const match = this.commonHandler.handleFilter(filter)
+    const sortBy = this.commonHandler.handleSort(sort)
+    const { skip, lim } = this.commonHandler.handlePagination(range)
+
+    const users = await this.userModel
+      .find(match)
+      .sort(sortBy)
+      .limit(lim)
+      .skip(skip)
+
+    const countDocuments = await this.userModel.countDocuments({})
+
+    //const usersList = commonHandlers.withIdField(users) //TODO Do it in Data Provider
+
+    return { users, countDocuments: countDocuments.toString() }
+  }
+
+  async getOneUser(id: string): Promise<UserDocument> {
+    const user = await this.userModel.findById(id)
+
+    //const userList = commonHandlers.withIdField(user) //TODO Do it in Data Provider
+
+    return user
   }
 }
