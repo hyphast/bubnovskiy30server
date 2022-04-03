@@ -1,14 +1,15 @@
-import { Injectable } from '@nestjs/common'
+import {
+  BadRequestException,
+  forwardRef,
+  Inject,
+  Injectable,
+} from '@nestjs/common'
 import { IGetAllQueries } from '../handlers/interfaces/get-all-queries.interface'
 import { InjectModel } from '@nestjs/mongoose'
 import { v4 } from 'uuid'
 import { Model } from 'mongoose'
 import { UpdateResult } from 'mongodb'
-import {
-  Appointment,
-  AppointmentDocument,
-  AppointmentsCell,
-} from './schemas/appointment.schema'
+import { Appointment, AppointmentDocument } from './schemas/appointment.schema'
 import {
   TimeTemplate,
   TimeTemplateDocument,
@@ -17,14 +18,19 @@ import { IDateSearchRange } from './interfaces/date-search-range.interface'
 import { CreateTimeDto } from './dtos/create-time.dto'
 import { UpdateAppointmentDto } from './dtos/update-appointment.dto'
 import { IHandleSort } from '../handlers/interfaces/handle-sort.interface'
+import { AppointmentsCell } from './schemas/appointments-cell.schema'
+import { UpdateAppointmentPatientsDto } from './dtos/update-appointment-patients.dto'
+import { RecordsService } from '../records/records.service'
 
 @Injectable()
 export class AppointmentsService {
   constructor(
     @InjectModel(Appointment.name)
-    private appointmentModel: Model<AppointmentDocument>,
+    private readonly appointmentModel: Model<AppointmentDocument>,
     @InjectModel(TimeTemplate.name)
-    private timeTemplateModel: Model<TimeTemplateDocument>,
+    private readonly timeTemplateModel: Model<TimeTemplateDocument>,
+    @Inject(forwardRef(() => RecordsService))
+    private readonly recordsService: RecordsService,
   ) {}
 
   async getAppointments(
@@ -98,13 +104,13 @@ export class AppointmentsService {
     updateAppointmentDto: UpdateAppointmentDto,
   ): Promise<UpdateResult> {
     // appointment = appointment.map(item => item.patients.map(i => i.numberPatients + 1))
-
     const { appointments } = updateAppointmentDto
     const numberAllPatients = this.calcNumberAllPatients(appointments)
 
     appointments.forEach((_, i) =>
       appointments[i].patients.forEach((pat, j) => {
-        appointments[i].patients[j] = Object.assign( //TODO Is it right?
+        appointments[i].patients[j] = Object.assign(
+          //TODO Is it right?
           { appointmentId: v4() },
           pat,
         )
@@ -120,6 +126,70 @@ export class AppointmentsService {
     //appointment['id'] = id
 
     return appointment
+  }
+
+  async updateAppointmentPatients(
+    updateAppointmentPatients: UpdateAppointmentPatientsDto,
+  ): Promise<AppointmentDocument> {
+    //const range = this.dateSearchRange(updateAppointmentPatients.date) //TODO Is it require?
+    let app = await this.appointmentModel.findOne({
+      date: new Date(updateAppointmentPatients.date), //TODO was: date: { $gte: range.start, $lt: range.end },
+    })
+    if (!app) {
+      const appointments = await this.initAppointments()
+      app = await this.appointmentModel.create({
+        date: updateAppointmentPatients.date,
+        appointments: appointments,
+        numberAllPatients: 0,
+      })
+    }
+
+    const appointment = app.appointments.find(
+      (item) =>
+        new Date(item.time).getTime() ===
+        new Date(updateAppointmentPatients.time).getTime(),
+    )
+
+    appointment.patients.splice(appointment.patients.length, 0, {
+      appointmentId: v4(),
+      userId: updateAppointmentPatients.userId,
+      appointmentType: updateAppointmentPatients.appointmentType,
+    })
+
+    app.numberAllPatients = this.calcNumberAllPatients(app.appointments)
+
+    await this.recordsService.addRecord(updateAppointmentPatients)
+
+    return app.save()
+  }
+
+  async deletePatient(
+    updateAppointmentPatients: UpdateAppointmentPatientsDto,
+  ): Promise<AppointmentDocument> {
+    //const range = this.dateSearchRange(updateAppointmentPatients.date)
+    const app = await this.appointmentModel.findOne({
+      date: new Date(updateAppointmentPatients.date), //TODO was: date: { $gte: range.start, $lt: range.end },
+    })
+
+    if (!app) {
+      throw new BadRequestException('Ошибка сервера')
+    }
+
+    const appointmentIndex = app.appointments.findIndex(
+      (item) =>
+        new Date(item.time).getTime() ===
+        new Date(updateAppointmentPatients.time).getTime(),
+    )
+
+    const patientIndex = app.appointments[appointmentIndex].patients.findIndex(
+      (item) => String(item.userId) === updateAppointmentPatients.userId,
+    )
+
+    app.appointments[appointmentIndex].patients.splice(patientIndex, 1)
+
+    app.numberAllPatients = this.calcNumberAllPatients(app.appointments)
+
+    return app.save()
   }
 
   calcNumberAllPatients(appointments: Array<AppointmentsCell>): number {
@@ -173,7 +243,7 @@ export class AppointmentsService {
 
     const existingItemsArray: Array<AppointmentDocument> =
       await this.appointmentModel.find({
-        date: { $gte: start, $lt: end },
+        date: new Date(startDateTimestamp), //TODO was: date: { $gte: start, $lt: end },
       })
 
     const nonExistentItemsArray = await this.findNonExistentDocuments(

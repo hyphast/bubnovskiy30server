@@ -1,6 +1,6 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose'
 import { ApiProperty } from '@nestjs/swagger'
-import { Types } from 'mongoose'
+import * as mongoose from 'mongoose'
 import { Exclude } from 'class-transformer'
 import { Document } from 'mongoose'
 
@@ -8,9 +8,9 @@ export type TokenDocument = Token & Document
 
 @Schema()
 export class Token {
-  @Prop({ type: Types.ObjectId, ref: 'User' }) //TODO Is there required field ?
+  @Prop({ type: mongoose.Schema.Types.ObjectId, ref: 'User' }) //TODO Is it required field ?
   @ApiProperty({ example: '6223f5fc14f2a789fa3bca83', description: 'User id' })
-  user: Types.ObjectId
+  user: string
 
   @Prop({ required: true })
   @Exclude()

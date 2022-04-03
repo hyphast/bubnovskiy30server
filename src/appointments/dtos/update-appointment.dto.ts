@@ -1,9 +1,10 @@
-import { AppointmentsCell } from '../schemas/appointment.schema'
-import { IsDateString, IsDefined, IsString } from 'class-validator'
+import { IsArray, IsDateString, IsDefined, IsString } from 'class-validator'
 import { ApiProperty } from '@nestjs/swagger'
+import { AppointmentsCell } from '../schemas/appointments-cell.schema'
 
 export class UpdateAppointmentDto {
   @IsDefined({ message: 'Appointments не заданы' })
+  @IsArray()
   @ApiProperty({
     example: AppointmentsCell,
     description: 'Appointment',

@@ -39,7 +39,7 @@ export class User {
 
   @Prop({ required: true })
   @ApiProperty({ example: 'male', description: 'Gender' })
-  gender: string
+  gender: 'male' | 'female'
 
   @Prop({ required: true })
   @ApiProperty({ example: '+79213441126', description: 'Phone number' })

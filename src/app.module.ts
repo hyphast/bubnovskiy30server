@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common'
+import * as path from 'path'
 import { MongooseModule } from '@nestjs/mongoose'
 import { MailerModule } from '@nestjs-modules/mailer'
 import { ConfigModule } from '@nestjs/config'
@@ -8,12 +9,19 @@ import { MailModule } from './mail/mail.module'
 import { TokenModule } from './token/token.module'
 import { AppointmentsModule } from './appointments/appointments.module'
 import { HandlersModule } from './handlers/handlers.module'
+import { RecordsModule } from './records/records.module'
+import { ProfileModule } from './profile/profile.module'
+import { FilesModule } from './files/files.module'
+import { ServeStaticModule } from '@nestjs/serve-static'
 
 @Module({
   imports: [
     ConfigModule.forRoot({
       envFilePath: `.${process.env.NODE_ENV}.env`,
       isGlobal: true,
+    }),
+    ServeStaticModule.forRoot({
+      rootPath: path.resolve(__dirname, 'static'),
     }),
     MongooseModule.forRoot(process.env.mongoUri),
     MailerModule.forRoot({
@@ -36,6 +44,9 @@ import { HandlersModule } from './handlers/handlers.module'
     TokenModule,
     AppointmentsModule,
     HandlersModule,
+    RecordsModule,
+    ProfileModule,
+    FilesModule,
   ],
   controllers: [],
   providers: [],

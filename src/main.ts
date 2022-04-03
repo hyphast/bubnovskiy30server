@@ -5,10 +5,22 @@ import * as cookieParser from 'cookie-parser'
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger'
 import helmet from 'helmet'
 
+const whitelist = ['http://localhost:3000', 'http://localhost:3001']
+
 async function bootstrap() {
   const app = await NestFactory.create(AppModule)
+  app.enableCors({
+    credentials: true,
+    origin: function (origin, callback) {
+      if (whitelist.indexOf(origin) !== -1 || !origin) {
+        callback(null, true)
+      } else {
+        callback(new Error('Not allowed by CORS'))
+      }
+    },
+  })
 
-  app.use(helmet()) //TODO It may cause problems!
+  app.use(helmet({ crossOriginResourcePolicy: { policy: 'same-site' } })) //TODO It may cause problems!
   app.use(cookieParser())
   app.useGlobalPipes(new ValidationPipe())
 

@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common'
-import { Model, Types } from 'mongoose'
+import { Model } from 'mongoose'
 import { UserDocument } from '../users/schemas/user.schema'
 import * as bcrypt from 'bcrypt'
 import { DeleteResult } from 'mongodb'
@@ -17,12 +17,12 @@ export class TokenService {
     private jwtService: JwtService,
   ) {}
 
-  async findToken(id: Types.ObjectId): Promise<TokenDocument> {
+  async findToken(id: string): Promise<TokenDocument> {
     const tokenData = await this.tokenModel.findOne({ user: id })
     return tokenData
   }
 
-  async removeToken(id: Types.ObjectId): Promise<DeleteResult> {
+  async removeToken(id: string): Promise<DeleteResult> {
     const tokenData = await this.tokenModel.deleteOne({ user: id })
     return tokenData
   }
@@ -40,11 +40,11 @@ export class TokenService {
 
     return {
       accessToken: this.jwtService.sign(payload, {
-        expiresIn: '15s', //TODO 25m
+        expiresIn: '25m', //TODO 25m
         secret: process.env.jwtAccessSecret,
       }),
       refreshToken: this.jwtService.sign(payload, {
-        expiresIn: '30s', //TODO 15d
+        expiresIn: '15d', //TODO 15d
         secret: process.env.jwtRefreshSecret,
       }),
     }
@@ -52,7 +52,7 @@ export class TokenService {
 
   private async saveToken(
     refreshToken: string,
-    userId: Types.ObjectId,
+    userId: string,
   ): Promise<TokenDocument> {
     const tokenData = await this.tokenModel.findOne({ user: userId })
     const hashedRefreshToken = await bcrypt.hash(refreshToken, 12)

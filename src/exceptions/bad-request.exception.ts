@@ -19,10 +19,10 @@ export class BadRequestException extends HttpException {
     example: 'error',
     description: 'Exception type',
   })
-  type: 'error'
+  type: 'error' | 'warning'
 
   constructor(message: string, errors: IErrorsException[] = []) {
-    super(message, HttpStatus.BAD_REQUEST)
+    super({ message, errors, type: 'error' }, HttpStatus.BAD_REQUEST)
     this.message = message
     this.errors = errors
     this.type = 'error'

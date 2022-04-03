@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common'
 import { InjectModel } from '@nestjs/mongoose'
 import { User, UserDocument } from './schemas/user.schema'
-import { Model, Types } from 'mongoose'
+import { Model } from 'mongoose'
 import { v4 } from 'uuid'
 import * as bcrypt from 'bcrypt'
 import { CreateUserDto } from '../auth/dto/create-user.dto'
@@ -29,7 +29,7 @@ export class UsersService {
     return user
   }
 
-  async findById(id: Types.ObjectId): Promise<UserDocument> {
+  async findUserById(id: string): Promise<UserDocument> {
     const user = await this.userModel.findById(id)
     return user
   }

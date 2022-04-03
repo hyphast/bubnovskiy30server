@@ -1,6 +1,5 @@
 import { Injectable, UnauthorizedException } from '@nestjs/common'
 import * as bcrypt from 'bcrypt'
-import { Types } from 'mongoose'
 import { DeleteResult } from 'mongodb'
 import { Response } from 'express'
 import { CreateUserDto } from './dto/create-user.dto'
@@ -53,7 +52,7 @@ export class AuthService {
     return userData
   }
 
-  async logout(id: Types.ObjectId): Promise<DeleteResult> {
+  async logout(id: string): Promise<DeleteResult> {
     const token = await this.tokenService.removeToken(id)
     return token
   }
@@ -82,7 +81,7 @@ export class AuthService {
 
   async validateRefreshToken(
     refreshToken: string,
-    id: Types.ObjectId,
+    id: string,
   ): Promise<UserDocument> {
     const tokenFromDB = await this.tokenService.findToken(id)
     if (!tokenFromDB) {
@@ -98,7 +97,7 @@ export class AuthService {
       throw new UnauthorizedException()
     }
 
-    const user = await this.usersService.findById(id)
+    const user = await this.usersService.findUserById(id)
 
     return user
   }
