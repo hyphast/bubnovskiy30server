@@ -71,7 +71,7 @@ export class AppointmentsService {
       const app = await this.initAppointments()
       const sortedApp = app.sort(
         (a, b) => new Date(a.time).getTime() - new Date(b.time).getTime(),
-      ) //TODO modified
+      )
 
       return { date, appointments: sortedApp, numberAllPatients: 0 } //TODO ??
     }
@@ -90,12 +90,11 @@ export class AppointmentsService {
     appointments.forEach((_, i) =>
       appointments[i].patients.forEach((pat, j) => {
         appointments[i].patients[j] = Object.assign(
-          //TODO Is it right?
           { appointmentId: v4() },
           pat,
         )
       }),
-    ) //todo дублирование?
+    )
 
     const appointment = await this.appointmentModel.updateOne(
       { _id: id },
@@ -108,9 +107,8 @@ export class AppointmentsService {
   async updateAppointmentPatients(
     updateAppointmentPatients: UpdateAppointmentPatientsDto,
   ): Promise<AppointmentDocument> {
-    //const range = this.dateSearchRange(updateAppointmentPatients.date)
     let app = await this.appointmentModel.findOne({
-      date: new Date(updateAppointmentPatients.date), //TODO was: date: { $gte: range.start, $lt: range.end },
+      date: new Date(updateAppointmentPatients.date),
     })
     if (!app) {
       const appointments = await this.initAppointments()
@@ -145,7 +143,7 @@ export class AppointmentsService {
   ): Promise<AppointmentDocument> {
     //const range = this.dateSearchRange(updateAppointmentPatients.date)
     const app = await this.appointmentModel.findOne({
-      date: new Date(updateAppointmentPatients.date), //TODO was: date: { $gte: range.start, $lt: range.end },
+      date: new Date(updateAppointmentPatients.date),
     })
 
     if (!app) {
@@ -173,7 +171,7 @@ export class AppointmentsService {
     return appointments
       ? appointments.reduce(
           (acc, cur) =>
-            cur?.patients?.length ? acc + cur.patients.length : acc, //TODO acc + 0?
+            cur?.patients?.length ? acc + cur.patients.length : acc,
           0,
         )
       : null
@@ -196,7 +194,7 @@ export class AppointmentsService {
     )
     const dateOffset = range[0]
     const amountOnePortion = range[1] - range[0] + 1
-    const startDateTimestamp = date.setDate(date.getDate() + dateOffset) // TODO was: const startDateTimestamp = date.setUTCDate(date.getUTCDate() + dateOffset)
+    const startDateTimestamp = date.setDate(date.getDate() + dateOffset)
 
     const { start, end } = this.dateSearchRange(
       startDateTimestamp,
@@ -205,7 +203,7 @@ export class AppointmentsService {
 
     const existingItemsArray: Array<AppointmentDocument> =
       await this.appointmentModel.find({
-        date: { $gte: start, $lt: end }, //TODO was: date: { $gte: start, $lt: end },
+        date: { $gte: start, $lt: end },
       })
 
     const nonExistentItemsArray = await this.findNonExistentDocuments(
@@ -224,22 +222,22 @@ export class AppointmentsService {
     startDateTimestamp: number,
     amountOnePortion: number,
   ): Promise<Appointment[]> {
-    const nonExistentItemsArray: Array<Appointment> = [] //TODO Look for array type
+    const nonExistentItemsArray: Array<Appointment> = []
     const curDate = new Date(startDateTimestamp)
 
     for (let i = 0; i < amountOnePortion; i++) {
       //const { start, end } = this.dateSearchRange(curDate)
       const suspectApp: AppointmentDocument | undefined =
         existingItemsArray.find((item) => {
-          const itemDate = new Date(item.date) //TODO Was: item.date.getTime()
-          return itemDate.getTime() === curDate.getTime() // TODO Was: return itemDate >= start && itemDate <= end
+          const itemDate = new Date(item.date)
+          return itemDate.getTime() === curDate.getTime()
         })
 
       if (!suspectApp) {
         const apps = await this.initAppointments()
 
         const newApp: Appointment = {
-          date: curDate.toISOString(), //TODO There was: date: curDate.toISOString(),
+          date: curDate.toISOString(),
           appointments: apps,
           numberAllPatients: 0,
         }

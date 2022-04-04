@@ -14,7 +14,7 @@ export class AppointmentsCell {
   })
   time: string
 
-  @Prop({ type: [patientsSchema] }) //TODO Look up this information here: https://stackoverflow.com/questions/62704600/mongoose-subdocuments-in-nest-js
+  @Prop({ type: [patientsSchema] })
   @ApiProperty({
     example: Patients,
     description: 'Appointments patients',

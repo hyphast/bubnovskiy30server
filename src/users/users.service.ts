@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common'
+import { HttpException, HttpStatus, Injectable } from '@nestjs/common'
 import { InjectModel } from '@nestjs/mongoose'
 import { User, UserDocument } from './schemas/user.schema'
 import { Model } from 'mongoose'
@@ -92,6 +92,13 @@ export class UsersService {
 
   async getOneUser(id: string): Promise<UserDocument> {
     const user = await this.userModel.findById(id)
+
+    if (!user) { //TODO почему это не выполняется?
+      new HttpException(
+        'Такого пользователя не существует',
+        HttpStatus.BAD_REQUEST,
+      )
+    }
 
     return user
   }

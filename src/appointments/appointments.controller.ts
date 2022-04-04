@@ -90,6 +90,7 @@ export class AppointmentsController {
     @Body() updateAppointmentDto: UpdateAppointmentDto,
     @Param() params,
   ): Promise<UpdateResult> {
+    console.log(updateAppointmentDto)
     const id: string = params.id
 
     //await recordService.addRecord(id, appointments, date) //TODO refactor!!!

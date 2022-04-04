@@ -1,6 +1,7 @@
 import { Document, Types } from 'mongoose'
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose'
 import { ApiProperty } from '@nestjs/swagger'
+import { AppointmentsType } from '../../common/types/appointments-type.type'
 
 export type PatientsDocument = Patients & Document
 
@@ -19,6 +20,6 @@ export class Patients {
 
   @Prop()
   @ApiProperty({ example: 'Treatment', description: 'Type of appointment' })
-  appointmentType: string // TODO There must be specific appointments types
+  appointmentType: AppointmentsType
 }
 export const patientsSchema = SchemaFactory.createForClass(Patients)

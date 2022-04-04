@@ -18,5 +18,5 @@ export class UpdateAppointmentDto {
     example: '2022-03-01T00:00:00.000+00:00',
     description: 'Date',
   })
-  readonly date: string //TODO Is it right?
+  readonly date: string
 }

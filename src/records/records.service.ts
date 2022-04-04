@@ -44,7 +44,7 @@ export class RecordsService {
     }
 
     const index = rec.upcomingRecords.findIndex(
-      (item) => String(item.appointmentId) === recordId, //TODO was: (item) => String(item._id) === recordId,
+      (item) => String(item.appointmentId) === recordId,
     )
 
     if (index === -1) {

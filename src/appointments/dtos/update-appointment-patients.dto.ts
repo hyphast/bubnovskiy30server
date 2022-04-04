@@ -1,5 +1,6 @@
 import { IsDefined, IsString } from 'class-validator'
 import { ApiProperty } from '@nestjs/swagger'
+import { AppointmentsType } from '../../common/types/appointments-type.type'
 
 export class UpdateAppointmentPatientsDto {
   @IsDefined({ message: 'Дата не задана' })
@@ -19,8 +20,11 @@ export class UpdateAppointmentPatientsDto {
   readonly time: string
 
   @IsString({ message: 'Должно быть строкой' })
-  @ApiProperty({ example: 'Treatment', description: 'Type of appointment' })
-  readonly appointmentType: string // TODO There must be specific appointments types
+  @ApiProperty({
+    example: 'Лечебные занятия',
+    description: 'Type of appointment',
+  })
+  readonly appointmentType: AppointmentsType
 
   @IsDefined({ message: 'User Id не задан' })
   @IsString({ message: 'Должно быть строкой' })
