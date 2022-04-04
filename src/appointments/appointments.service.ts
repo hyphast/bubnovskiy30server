@@ -48,8 +48,6 @@ export class AppointmentsService {
       .find({ date: { $gte: start, $lt: end } })
       .sort(sortBy)
 
-    //const appsWithId = this.withIdField(appointments) //TODO Do it in the Data Provider
-
     console.timeEnd('getAppointments router handler')
 
     return appointments
@@ -57,24 +55,6 @@ export class AppointmentsService {
 
   async getAppointmentById(id: string): Promise<AppointmentDocument> {
     const appointment = await this.appointmentModel.findById(id)
-
-    // const appointmentWithId = { id: appointment._id, ...appointment._doc } //TODO Do it in the Data Provider
-    //
-    // appointment.appointments = appointmentWithId.appointments.map((app) => ({ //TODO Do it in the Data Provider
-    //   id: app._id,
-    //   ...app._doc,
-    // }))
-    //
-    // appointment.appointments.forEach((app) => { //TODO Do it in the Data Provider
-    //   app.treatment = app.patients.filter(
-    //     (item) => item.appointmentType === 'Лечебные занятия',
-    //   )
-    //   app.physicalTraining = app.patients.filter(
-    //     (item) =>
-    //       item.appointmentType === 'Физкультурно-оздоровительные занятия',
-    //   )
-    // })
-
     return appointment
   }
 
@@ -122,16 +102,13 @@ export class AppointmentsService {
       { appointments: appointments, numberAllPatients },
     )
 
-    //appointment['date'] = date //TODO Do it in the Data Provider
-    //appointment['id'] = id
-
     return appointment
   }
 
   async updateAppointmentPatients(
     updateAppointmentPatients: UpdateAppointmentPatientsDto,
   ): Promise<AppointmentDocument> {
-    //const range = this.dateSearchRange(updateAppointmentPatients.date) //TODO Is it require?
+    //const range = this.dateSearchRange(updateAppointmentPatients.date)
     let app = await this.appointmentModel.findOne({
       date: new Date(updateAppointmentPatients.date), //TODO was: date: { $gte: range.start, $lt: range.end },
     })
@@ -202,21 +179,6 @@ export class AppointmentsService {
       : null
   }
 
-  // withIdField(items) { //TODO remove it
-  //   if (Array.isArray(items)) {
-  //     const itemsList: Array<Appointment> = items.map((i) => ({
-  //       id: i._id,
-  //       ...i._doc,
-  //     }))
-  //
-  //     return itemsList
-  //   } else {
-  //     const itemsList = { id: items._id, ...items._doc }
-  //
-  //     return itemsList
-  //   }
-  // }
-
   handleSort(sort: IGetAllQueries['sort']): IHandleSort {
     const sortBy: IHandleSort = {}
     if (sort) {
@@ -230,11 +192,11 @@ export class AppointmentsService {
   ): Promise<IDateSearchRange> {
     const now = new Date()
     const date = new Date(
-      Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()),
-    ) // TODO Is it correct??
+      Date.UTC(now.getFullYear(), now.getMonth(), now.getDate()),
+    )
     const dateOffset = range[0]
     const amountOnePortion = range[1] - range[0] + 1
-    const startDateTimestamp = date.setUTCDate(date.getUTCDate() + dateOffset) // TODO Is it correct??
+    const startDateTimestamp = date.setDate(date.getDate() + dateOffset) // TODO was: const startDateTimestamp = date.setUTCDate(date.getUTCDate() + dateOffset)
 
     const { start, end } = this.dateSearchRange(
       startDateTimestamp,
@@ -243,7 +205,7 @@ export class AppointmentsService {
 
     const existingItemsArray: Array<AppointmentDocument> =
       await this.appointmentModel.find({
-        date: new Date(startDateTimestamp), //TODO was: date: { $gte: start, $lt: end },
+        date: { $gte: start, $lt: end }, //TODO was: date: { $gte: start, $lt: end },
       })
 
     const nonExistentItemsArray = await this.findNonExistentDocuments(
@@ -303,23 +265,14 @@ export class AppointmentsService {
     return appointments
   }
 
-  dateSearchRange(
-    dateTimestamp: number | string,
-    offset = 1,
-  ): IDateSearchRange {
-    const date = new Date(dateTimestamp)
+  dateSearchRange(d: number | string, offset = 1): IDateSearchRange {
+    const date = new Date(d)
     const start = new Date(
-      date.getFullYear(),
-      date.getMonth(),
-      date.getDate(),
+      Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()),
     ).getTime()
-
     const end = new Date(
-      date.getFullYear(),
-      date.getMonth(),
-      date.getDate() + offset,
+      Date.UTC(date.getFullYear(), date.getMonth(), date.getDate() + offset),
     ).getTime()
-
     return { start, end }
   }
 

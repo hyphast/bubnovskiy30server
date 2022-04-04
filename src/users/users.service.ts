@@ -87,15 +87,11 @@ export class UsersService {
 
     const countDocuments = await this.userModel.countDocuments({})
 
-    //const usersList = commonHandlers.withIdField(users) //TODO Do it in Data Provider
-
     return { users, countDocuments: countDocuments.toString() }
   }
 
   async getOneUser(id: string): Promise<UserDocument> {
     const user = await this.userModel.findById(id)
-
-    //const userList = commonHandlers.withIdField(user) //TODO Do it in Data Provider
 
     return user
   }

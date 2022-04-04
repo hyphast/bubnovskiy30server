@@ -11,6 +11,7 @@ async function bootstrap() {
   const app = await NestFactory.create(AppModule)
   app.enableCors({
     credentials: true,
+    exposedHeaders: 'Content-Range',
     origin: function (origin, callback) {
       if (whitelist.indexOf(origin) !== -1 || !origin) {
         callback(null, true)
