@@ -10,6 +10,7 @@ import { SignInUserDto } from './dto/sign-in-user.dto'
 import { UserDocument } from '../users/schemas/user.schema'
 import { TokenService } from '../token/token.service'
 import { UserDataDto } from './dto/user-data.dto'
+import axios from 'axios'
 
 @Injectable()
 export class AuthService {
@@ -19,7 +20,27 @@ export class AuthService {
     private readonly tokenService: TokenService,
   ) {}
 
+  async verifyRecaptchaToken(captchaToken: string): Promise<boolean> {
+    const res = await axios.post(
+      process.env.verifyRecaptchaURL,
+      `secret=${process.env.recaptchaSecretKey}&response=${captchaToken}`,
+      {
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+      },
+    )
+    return res.data.success
+  }
+
   async registration(createUserDto: CreateUserDto): Promise<UserDataDto> {
+    const isVerified = this.verifyRecaptchaToken(createUserDto.captchaToken)
+    if (!isVerified) {
+      throw new BadRequestException('Вы не прошли проверку на робота', [
+        { captcha: 'Вы не прошли проверку на робота' },
+      ])
+    }
+
     const candidate = await this.usersService.getUserByEmail(
       createUserDto.email,
     )
@@ -46,6 +67,13 @@ export class AuthService {
   }
 
   async login(signInUserDto: SignInUserDto): Promise<UserDataDto> {
+    const isVerified = this.verifyRecaptchaToken(signInUserDto.captchaToken)
+    if (!isVerified) {
+      throw new BadRequestException('Вы не прошли проверку на робота', [
+        { captcha: 'Вы не прошли проверку на робота' },
+      ])
+    }
+
     const user = await this.usersService.validateUser(signInUserDto)
     const userData = await this.tokenService.setTokens(user)
 

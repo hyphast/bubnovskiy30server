@@ -43,4 +43,9 @@ export class CreateUserDto {
   @IsPhoneNumber('RU')
   @ApiProperty({ example: '+79213441126', description: 'Phone number' })
   readonly phoneNumber: string
+
+  @IsDefined({ message: 'captchaToken не задан' })
+  @IsString({ message: 'Должно быть строкой' })
+  @ApiProperty({ example: '1fz346ff343ar5ds1236', description: 'captchaToken' })
+  readonly captchaToken: string
 }

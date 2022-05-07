@@ -14,13 +14,20 @@ import { RecordsService } from './records.service'
 import { IGetUpcomingRecords } from './interfaces/get-upcoming-records.interface'
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard'
 import { AddRecordDto } from './dtos/add-record.dto'
-import { Record, RecordDocument } from './schemas/record.schema'
+import {
+  PersonalRecords,
+  PersonalRecordsDocument,
+} from './schemas/personal-records.schema'
 import { ResponseDto } from '../common/response.dto'
+import { AppointmentsService } from '../appointments/appointments.service'
 
 @ApiTags('Records')
 @Controller('records')
 export class RecordsController {
-  constructor(private readonly recordsService: RecordsService) {}
+  constructor(
+    private readonly recordsService: RecordsService,
+    private readonly appointmentsService: AppointmentsService,
+  ) {}
   @Get()
   @UseGuards(JwtAuthGuard)
   //@ApiOkResponse({ type: Record })
@@ -40,9 +47,19 @@ export class RecordsController {
     @Req() req: IRequestWithUserPayload,
     @Query() query: { id: string },
   ): Promise<ResponseDto> {
-    const recordId = query.id
+    const recId = query.id
 
-    await this.recordsService.deleteRecord(req.user.id, recordId)
+    const { rec, record } = await this.recordsService.deleteRecord(
+      req.user.id,
+      recId,
+      'Услуга отменена',
+    )
+    await this.appointmentsService.deletePatient({
+      date: rec.date,
+      time: rec.time,
+      appointmentType: rec.appointmentType,
+      record,
+    })
 
     return new ResponseDto(
       'Запись была удалена и перемещена в архив',
@@ -53,10 +70,12 @@ export class RecordsController {
 
   @Post()
   @UseGuards(JwtAuthGuard)
-  @ApiOkResponse({ type: Record })
+  @ApiOkResponse({ type: PersonalRecords })
   @ApiBearerAuth()
-  async addRecord(@Body() addRecordDto: AddRecordDto): Promise<RecordDocument> {
-    const recordData = await this.recordsService.addRecord(addRecordDto)
+  async addUpcomingRecord(
+    @Body() addRecordDto: AddRecordDto,
+  ): Promise<PersonalRecordsDocument> {
+    const recordData = await this.recordsService.addUpcomingRecord(addRecordDto)
     return recordData
   }
 }

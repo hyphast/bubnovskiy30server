@@ -19,7 +19,7 @@ export class AppointmentsCell {
     example: Patients,
     description: 'Appointments patients',
   })
-  patients: Array<Patients> | []
+  patients: Array<Patients>
 
   @Prop()
   @ApiProperty({

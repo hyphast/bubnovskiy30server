@@ -1,6 +1,10 @@
 import { forwardRef, Inject, Injectable } from '@nestjs/common'
 import { Model } from 'mongoose'
 import { InjectModel } from '@nestjs/mongoose'
+import {
+  PersonalRecords,
+  PersonalRecordsDocument,
+} from './schemas/personal-records.schema'
 import { Record, RecordDocument } from './schemas/record.schema'
 import { RecordPayloadDto } from './dtos/record-payload.dto'
 import { IGetUpcomingRecords } from './interfaces/get-upcoming-records.interface'
@@ -8,87 +12,131 @@ import { BadRequestException } from '../exceptions/bad-request.exception'
 import { AppointmentsService } from '../appointments/appointments.service'
 import { AddRecordDto } from './dtos/add-record.dto'
 import { v4 } from 'uuid'
+import { CreateRecordDto } from './dtos/create-record.dto'
+import { IDeleteRecord } from './interfaces/delete-record.interface'
+import { UsersService } from '../users/users.service'
 
 @Injectable()
 export class RecordsService {
   constructor(
+    @InjectModel(PersonalRecords.name)
+    private personalRecordsModel: Model<PersonalRecordsDocument>,
     @InjectModel(Record.name) private recordModel: Model<RecordDocument>,
     @Inject(forwardRef(() => AppointmentsService))
     private readonly appointmentsService: AppointmentsService,
+    private readonly usersService: UsersService,
   ) {}
-  async findRecordByUserId(id: string): Promise<RecordDocument> {
-    const rec = await this.recordModel.findOne({ user: id })
+  async findRecord(id: string): Promise<RecordDocument> {
+    const rec = await this.recordModel.findById(id)
     return rec
   }
 
-  async getRecords(id: string): Promise<IGetUpcomingRecords> {
-    const rec = await this.findRecordByUserId(id)
+  async findPersonalRecordsByUserId(
+    id: string,
+  ): Promise<PersonalRecordsDocument> {
+    const recs = await this.personalRecordsModel.findOne({ user: id })
+    return recs
+  }
 
-    if (!rec) {
-      return { records: { upcomingRecords: [], finishedRecords: [] } }
+  async getRecords(id: string): Promise<IGetUpcomingRecords> {
+    const recs = await this.findPersonalRecordsByUserId(id)
+
+    if (!recs) {
+      return {
+        records: {
+          upcomingRecords: [],
+          finishedRecords: [],
+          modifiedNumber: 0,
+        },
+      }
     }
 
-    const recordsDto = new RecordPayloadDto(rec)
+    await recs.populate('upcomingRecords.record')
+    await recs.populate('finishedRecords.record')
+
+    const recordsDto = new RecordPayloadDto(recs)
 
     return { records: recordsDto }
   }
 
   async deleteRecord(
     userId: string,
-    recordId: string,
-  ): Promise<RecordDocument> {
-    const rec = await this.findRecordByUserId(userId)
+    recId: string,
+    status: string,
+  ): Promise<IDeleteRecord> {
+    const records = await this.findPersonalRecordsByUserId(userId)
 
-    if (!rec.upcomingRecords.length) {
+    if (!records.upcomingRecords.length) {
       throw new BadRequestException('Такой записи не существует')
     }
 
-    const index = rec.upcomingRecords.findIndex(
-      (item) => String(item.appointmentId) === recordId,
+    const index = records.upcomingRecords.findIndex(
+      (item) => String(item.record) === recId,
     )
 
     if (index === -1) {
       throw new BadRequestException('Такой записи не существует')
     }
 
-    const { date, time, appointmentType } = rec.upcomingRecords[index]
-    await this.appointmentsService.deletePatient({
-      date,
-      time,
-      appointmentType,
-      userId,
+    const { record } = records.upcomingRecords[index]
+
+    const rec = await this.findRecord(record)
+
+    rec.status = status
+    rec.modifiedDate = new Date()
+    await rec.save()
+
+    records.finishedRecords.splice(records.finishedRecords.length, 0, {
+      record,
     })
 
-    rec.finishedRecords.splice(rec.finishedRecords.length, 0, {
-      appointmentType: rec.upcomingRecords[index].appointmentType,
-      time: rec.upcomingRecords[index].time,
-      date: rec.upcomingRecords[index].date,
-      appointmentId: rec.upcomingRecords[index].appointmentId,
-      status: 'Услуга отменена',
-    })
+    records.upcomingRecords.splice(index, 1)
 
-    rec.upcomingRecords.splice(index, 1)
+    await records.save()
 
-    return rec.save()
+    return { rec, record }
   }
 
-  async addRecord(addRecordDto: AddRecordDto): Promise<RecordDocument> {
-    let rec = await this.findRecordByUserId(addRecordDto.userId)
+  async createRecord(createRecordDto: CreateRecordDto) {
+    const rec = await this.recordModel.create({
+      userId: createRecordDto.userId,
+      date: createRecordDto.date,
+      time: createRecordDto.time,
+      appointmentType: createRecordDto.appointmentType,
+      status: createRecordDto.status,
+      modifiedDate: new Date(),
+    })
+
+    return rec
+  }
+
+  async incModifiedNumber(userId: string) {
+    const userData = this.personalRecordsModel.updateOne(
+      { user: userId },
+      { $inc: { modifiedNumber: 1 } },
+    )
+    return userData
+  }
+
+  async addUpcomingRecord(
+    addRecordDto: AddRecordDto,
+  ): Promise<PersonalRecordsDocument> {
+    let rec = await this.findPersonalRecordsByUserId(addRecordDto.userId)
 
     if (!rec) {
-      rec = await this.recordModel.create({
+      rec = await this.personalRecordsModel.create({
         user: addRecordDto.userId,
         upcomingRecords: [],
         finishedRecords: [],
+        modifiedNumber: 0,
       })
     }
-
     rec.upcomingRecords.splice(rec.upcomingRecords.length, 0, {
-      appointmentId: v4(),
-      date: addRecordDto.date,
-      time: addRecordDto.time,
-      appointmentType: addRecordDto.appointmentType,
+      record: addRecordDto.record,
     })
+
+    const userData = await this.incModifiedNumber(addRecordDto.userId)
+    console.log(userData)
 
     return rec.save()
   }

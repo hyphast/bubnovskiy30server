@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger'
-import { RecordDocument } from '../schemas/record.schema'
+import { PersonalRecordsDocument } from '../schemas/personal-records.schema'
 import { UpcomingRecord } from '../schemas/upcoming-record.schema'
 import { FinishedRecord } from '../schemas/finished-record.schema'
 
@@ -16,8 +16,12 @@ export class RecordPayloadDto {
   })
   readonly finishedRecords: Array<FinishedRecord>
 
-  constructor(record: RecordDocument) {
+  @ApiProperty({ example: '3', description: 'Number of modified' })
+  readonly modifiedNumber: number
+
+  constructor(record: PersonalRecordsDocument) {
     this.upcomingRecords = record.upcomingRecords
     this.finishedRecords = record.finishedRecords
+    this.modifiedNumber = record.modifiedNumber
   }
 }

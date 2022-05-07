@@ -9,10 +9,27 @@ export class FilesService {
     try {
       const fileName = v4() + '.jpg'
       const filePath = path.resolve(__dirname, '..', 'static')
-      if (!fs.existsSync(filePath)) {
-        fs.mkdirSync(filePath, { recursive: true })
-      }
-      fs.writeFileSync(path.join(filePath, fileName), file.buffer)
+
+      fs.access(filePath, (err) => {
+        fs.mkdir(filePath, { recursive: true }, (err) => {
+          if (err) {
+            throw new HttpException(
+              `Ошибка записи файла: ${err}`,
+              HttpStatus.INTERNAL_SERVER_ERROR,
+            )
+          }
+        })
+      })
+
+      fs.writeFile(path.join(filePath, fileName), file.buffer, (err) => {
+        if (err) {
+          throw new HttpException(
+            `Ошибка записи файла: ${err}`,
+            HttpStatus.INTERNAL_SERVER_ERROR,
+          )
+        }
+      })
+
       return fileName
     } catch (e) {
       throw new HttpException(

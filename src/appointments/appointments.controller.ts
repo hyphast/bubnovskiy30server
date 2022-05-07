@@ -90,13 +90,16 @@ export class AppointmentsController {
     @Body() updateAppointmentDto: UpdateAppointmentDto,
     @Param() params,
   ): Promise<UpdateResult> {
-    console.log(updateAppointmentDto)
     const id: string = params.id
 
-    //await recordService.addRecord(id, appointments, date) //TODO refactor!!!
-    const appointment = await this.appointmentsService.updateOneAppointment(
+    await this.appointmentsService.deleteOldRecords(
       id,
-      updateAppointmentDto,
+      updateAppointmentDto.appointments,
+    )
+    const appointment = await this.appointmentsService.createNewRecords(
+      id,
+      updateAppointmentDto.appointments,
+      updateAppointmentDto.date,
     )
 
     return appointment

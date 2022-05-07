@@ -28,15 +28,17 @@ export class CommonHandler {
     const match: IHandleFilter = {}
     if (filter) {
       Object.keys(filter).forEach((item) => {
-        if (item === 'id') return (match['_id'] = filter[item])
+        if (item === 'id') return (match._id = filter[item])
         if (item === 'q') {
-          const params = filter['q'].split(' ')
+          const params = filter.q.split(' ')
 
-          if (!!params[0])
-            match['firstName'] = { $regex: params[0], $options: 'i' }
-          if (!!params[1])
-            match['lastName'] = { $regex: params[1], $options: 'i' }
-          if (!!params[2]) match['phoneNumber'] = { $regex: params[2] }
+          !!params[0] && (match.lastName = { $regex: params[0], $options: 'i' })
+          !!params[1] &&
+            (match.firstName = { $regex: params[1], $options: 'i' })
+          !!params[2] &&
+            (match.patronymic = { $regex: params[2], $options: 'i' })
+          !!params[3] &&
+            (match.phoneNumber = { $regex: params[3], $options: 'i' })
 
           return match
         }

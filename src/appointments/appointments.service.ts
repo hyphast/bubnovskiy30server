@@ -21,6 +21,10 @@ import { IHandleSort } from '../handlers/interfaces/handle-sort.interface'
 import { AppointmentsCell } from './schemas/appointments-cell.schema'
 import { UpdateAppointmentPatientsDto } from './dtos/update-appointment-patients.dto'
 import { RecordsService } from '../records/records.service'
+import { Patients } from './schemas/patients.schema'
+import { IDeletePatient } from './interfaces/delete-patient.interface'
+import { AppointmentsType } from '../common/types/appointments-type.type'
+import { RecordDocument } from '../records/schemas/record.schema'
 
 @Injectable()
 export class AppointmentsService {
@@ -47,6 +51,7 @@ export class AppointmentsService {
     const appointments: Array<AppointmentDocument> = await this.appointmentModel
       .find({ date: { $gte: start, $lt: end } })
       .sort(sortBy)
+      .populate('appointments.patients.record')
 
     console.timeEnd('getAppointments router handler')
 
@@ -54,15 +59,15 @@ export class AppointmentsService {
   }
 
   async getAppointmentById(id: string): Promise<AppointmentDocument> {
-    const appointment = await this.appointmentModel.findById(id)
+    const appointment = await this.appointmentModel
+      .findById(id)
+      .populate('appointments.patients.record')
     return appointment
   }
 
   async getAppointmentByDate(
     date: string,
   ): Promise<AppointmentDocument | Appointment> {
-    //const { start, end } = this.dateSearchRange(date)
-
     const appointments = await this.appointmentModel.findOne({
       date: new Date(date),
     })
@@ -79,29 +84,120 @@ export class AppointmentsService {
     return appointments
   }
 
-  async updateOneAppointment(
-    id: string,
-    updateAppointmentDto: UpdateAppointmentDto,
-  ): Promise<UpdateResult> {
-    // appointment = appointment.map(item => item.patients.map(i => i.numberPatients + 1))
-    const { appointments } = updateAppointmentDto
-    const numberAllPatients = this.calcNumberAllPatients(appointments)
+  async createAndAddUpcomingRecord(
+    date: string,
+    time: string,
+    appointmentType: AppointmentsType,
+    userId: string,
+    status: string,
+  ): Promise<RecordDocument> {
+    const record = await this.recordsService.createRecord({
+      date: date,
+      time: time,
+      appointmentType: appointmentType,
+      userId: userId,
+      status: status,
+    })
 
-    appointments.forEach((_, i) =>
-      appointments[i].patients.forEach((pat, j) => {
-        appointments[i].patients[j] = Object.assign(
-          { appointmentId: v4() },
-          pat,
-        )
-      }),
-    )
+    await this.recordsService.addUpcomingRecord({
+      userId: userId,
+      record: record._id,
+    })
+
+    return record
+  }
+
+  async createNewRecords(
+    id: string,
+    newAppointments: any, //TODO was UpdateAppointmentDto
+    date: string,
+  ): Promise<UpdateResult> {
+    for (let i = 0; i < newAppointments.length; i++) {
+      for (let j = 0; j < newAppointments[i].patients.length; j++) {
+        const newRecord = newAppointments[i].patients[j].record
+        if (newRecord._id) {
+          const existingRecord = await this.recordsService.findRecord(
+            newRecord._id,
+          )
+
+          if (existingRecord.userId !== newRecord.userId) {
+            const record = await this.createAndAddUpcomingRecord(
+              date,
+              newAppointments[i].time,
+              newRecord.appointmentType,
+              newRecord.userId,
+              'Администратор добавил запись',
+            )
+
+            newAppointments[i].patients[j].record = record._id
+          } else if (
+            existingRecord.appointmentType !== newRecord.appointmentType
+          ) {
+            existingRecord.appointmentType = newRecord.appointmentType
+            existingRecord.status = 'Администратор изменил тип занятия'
+            existingRecord.modifiedDate = new Date()
+            await existingRecord.save()
+
+            newAppointments[i].patients[j].record = existingRecord._id
+          } else {
+            newAppointments[i].patients[j].record = existingRecord._id
+          }
+        } else {
+          const record = await this.createAndAddUpcomingRecord(
+            date,
+            newAppointments[i].time,
+            newRecord.appointmentType,
+            newRecord.userId,
+            'В ожидании',
+          )
+
+          newAppointments[i].patients[j].record = record._id
+        }
+      }
+    }
+
+    const numberAllPatients = this.calcNumberAllPatients(newAppointments)
 
     const appointment = await this.appointmentModel.updateOne(
       { _id: id },
-      { appointments: appointments, numberAllPatients },
+      { appointments: newAppointments, numberAllPatients },
     )
 
     return appointment
+  }
+
+  async deleteOldRecords(id, newAppointments) {
+    const curAppointments = await this.getAppointmentById(id)
+    const appointments: any = curAppointments.appointments //TODO any
+
+    for (let i = 0; i < appointments.length; i++) {
+      const sameNewAppointment = newAppointments.find(
+        (item) =>
+          new Date(item.time).getTime() ===
+          new Date(appointments[i].time).getTime(),
+      )
+
+      for (let j = 0; j < appointments[i].patients.length; j++) {
+        let patient: number
+        if (sameNewAppointment) {
+          patient = sameNewAppointment.patients.findIndex(
+            (item) =>
+              String(item.record.userId) ===
+              String(appointments[i].patients[j].record.userId),
+          )
+        } else {
+          patient = -1
+        }
+
+        if (patient === -1) {
+          await this.recordsService.deleteRecord(
+            String(appointments[i].patients[j].record.userId),
+            String(appointments[i].patients[j].record._id),
+            'Администратор отменил запись',
+          )
+        }
+      }
+    }
   }
 
   async updateAppointmentPatients(
@@ -125,25 +221,31 @@ export class AppointmentsService {
         new Date(updateAppointmentPatients.time).getTime(),
     )
 
+    const rec = await this.recordsService.createRecord({
+      ...updateAppointmentPatients,
+      status: 'В ожидании',
+    })
+
     appointment.patients.splice(appointment.patients.length, 0, {
-      appointmentId: v4(),
-      userId: updateAppointmentPatients.userId,
-      appointmentType: updateAppointmentPatients.appointmentType,
+      record: rec._id,
     })
 
     app.numberAllPatients = this.calcNumberAllPatients(app.appointments)
 
-    await this.recordsService.addRecord(updateAppointmentPatients)
+    await this.recordsService.addUpcomingRecord({
+      record: rec._id,
+      userId: updateAppointmentPatients.userId,
+    })
 
     return app.save()
   }
 
   async deletePatient(
-    updateAppointmentPatients: UpdateAppointmentPatientsDto,
+    deletePatient: IDeletePatient,
   ): Promise<AppointmentDocument> {
     //const range = this.dateSearchRange(updateAppointmentPatients.date)
     const app = await this.appointmentModel.findOne({
-      date: new Date(updateAppointmentPatients.date),
+      date: new Date(deletePatient.date),
     })
 
     if (!app) {
@@ -153,11 +255,11 @@ export class AppointmentsService {
     const appointmentIndex = app.appointments.findIndex(
       (item) =>
         new Date(item.time).getTime() ===
-        new Date(updateAppointmentPatients.time).getTime(),
+        new Date(deletePatient.time).getTime(),
     )
 
     const patientIndex = app.appointments[appointmentIndex].patients.findIndex(
-      (item) => String(item.userId) === updateAppointmentPatients.userId,
+      (item) => String(item.record) === deletePatient.record,
     )
 
     app.appointments[appointmentIndex].patients.splice(patientIndex, 1)

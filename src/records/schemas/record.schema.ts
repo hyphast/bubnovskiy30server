@@ -2,29 +2,53 @@ import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose'
 import { ApiProperty } from '@nestjs/swagger'
 import * as mongoose from 'mongoose'
 import { Document } from 'mongoose'
-import { FinishedRecord, FinishedRecordSchema } from './finished-record.schema'
-import { UpcomingRecord, UpcomingRecordSchema } from './upcoming-record.schema'
+import { AppointmentsType } from '../../common/types/appointments-type.type'
 
 export type RecordDocument = Record & Document
 
 @Schema()
 export class Record {
+  // @Prop()
+  // @ApiProperty({
+  //   example: '61f590407d7b11596c986259',
+  //   description: 'Appointment id',
+  // })
+  // appointmentId: string
+
   @Prop({ type: mongoose.Schema.Types.ObjectId, ref: 'User' }) //TODO Is there required field ?
   @ApiProperty({ example: '6181415b10cca71d04128705', description: 'User id' })
-  user: string
+  userId: string
 
-  @Prop({ type: [UpcomingRecordSchema] })
+  @Prop({ type: Date })
   @ApiProperty({
-    example: 'UpcomingRecord',
-    description: 'Array of upcoming records',
+    example: '2021-11-11T07:50:27.000+00:00',
+    description: 'Date of record',
   })
-  upcomingRecords: Array<UpcomingRecord>
+  date: string
 
-  @Prop({ type: [FinishedRecordSchema] })
+  @Prop({ type: Date })
   @ApiProperty({
-    example: 'FinishedRecord',
-    description: 'Array of finished records',
+    example: '1970-01-01T05:30:00.000+00:00',
+    description: 'Time of record',
   })
-  finishedRecords: Array<FinishedRecord>
+  time: string
+
+  @Prop()
+  @ApiProperty({ example: 'Treatment', description: 'Type of appointment' })
+  appointmentType: AppointmentsType
+
+  @Prop()
+  @ApiProperty({
+    example: 'Услуга отменена',
+    description: 'Status of record',
+  })
+  status: string
+
+  @Prop({ type: Date })
+  @ApiProperty({
+    example: '2021-11-11T07:50:27.000+00:00',
+    description: 'Modified date of record',
+  })
+  modifiedDate: string | Date
 }
 export const RecordSchema = SchemaFactory.createForClass(Record)

@@ -13,4 +13,9 @@ export class SignInUserDto {
   @Length(6, 32, { message: 'Пароль должен быть не меньше 4 и не больше 16' })
   @ApiProperty({ example: '1fz345ds1236', description: 'Password' })
   readonly password: string
+
+  @IsDefined({ message: 'captchaToken не задан' })
+  @IsString({ message: 'Должно быть строкой' })
+  @ApiProperty({ example: '1fz346ff343ar5ds1236', description: 'captchaToken' })
+  readonly captchaToken: string
 }

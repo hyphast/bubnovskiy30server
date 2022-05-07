@@ -1,10 +1,8 @@
 import { IsDefined, IsString } from 'class-validator'
 import { ApiProperty } from '@nestjs/swagger'
 import { AppointmentsType } from '../../common/types/appointments-type.type'
-import { Prop } from '@nestjs/mongoose'
-import mongoose from 'mongoose'
 
-export class UpdateAppointmentPatientsDto {
+export class CreateRecordDto {
   @IsDefined({ message: 'Дата не задана' })
   @IsString({ message: 'Должно быть строкой' })
   @ApiProperty({
@@ -28,11 +26,16 @@ export class UpdateAppointmentPatientsDto {
   })
   readonly appointmentType: AppointmentsType
 
-  @IsDefined({ message: 'userId не задан' })
+  @IsDefined({ message: 'User Id не задан' })
+  @IsString({ message: 'Должно быть строкой' })
+  @ApiProperty({ example: '61f590407d7b11596c98621c', description: 'User id' })
+  readonly userId: string
+
+  @IsDefined({ message: 'Статус не задан' })
   @IsString({ message: 'Должно быть строкой' })
   @ApiProperty({
-    example: '618ac0ae637b63304452e7a0',
-    description: 'Record id',
+    example: 'Услуга отменена',
+    description: 'Status of record',
   })
-  readonly userId: string
+  status: string
 }
