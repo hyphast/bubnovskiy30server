@@ -7,6 +7,7 @@ import {
   Post,
   Put,
   Query,
+  Req,
   Res,
   UseGuards,
 } from '@nestjs/common'
@@ -24,6 +25,7 @@ import { ApiBearerAuth, ApiTags } from '@nestjs/swagger'
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard'
 import { UpdateAppointmentPatientsDto } from './dtos/update-appointment-patients.dto'
 import { ResponseDto } from '../common/response.dto'
+import { IRequestWithUserPayload } from '../auth/interfaces/request-with-user-payload.dto'
 
 @ApiTags('Appointments')
 @Controller('appointments')
@@ -55,9 +57,11 @@ export class AppointmentsController {
   @HttpCode(201)
   async updateAppointmentPatients(
     @Body() updateAppointmentPatients: UpdateAppointmentPatientsDto,
+    @Req() req: IRequestWithUserPayload,
   ) {
     await this.appointmentsService.updateAppointmentPatients(
       updateAppointmentPatients,
+      req.user.email,
     )
 
     return new ResponseDto('Запись успешно выполнена', 'success', '/records')

@@ -1,7 +1,7 @@
 import { Document } from 'mongoose'
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose'
 import { ApiProperty } from '@nestjs/swagger'
-import { Patients, patientsSchema } from './patients.schema'
+import { Patients, PatientsSchema } from './patients.schema'
 
 export type AppointmentsCellDocument = AppointmentsCell & Document
 
@@ -14,7 +14,7 @@ export class AppointmentsCell {
   })
   time: string
 
-  @Prop({ type: [patientsSchema] })
+  @Prop({ type: [PatientsSchema] })
   @ApiProperty({
     example: Patients,
     description: 'Appointments patients',

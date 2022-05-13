@@ -13,4 +13,4 @@ export class Patients {
   })
   record: string
 }
-export const patientsSchema = SchemaFactory.createForClass(Patients)
+export const PatientsSchema = SchemaFactory.createForClass(Patients)

@@ -4,6 +4,7 @@ import {
   Delete,
   Get,
   Post,
+  Put,
   Query,
   Req,
   UseGuards,
@@ -77,5 +78,18 @@ export class RecordsController {
   ): Promise<PersonalRecordsDocument> {
     const recordData = await this.recordsService.addUpcomingRecord(addRecordDto)
     return recordData
+  }
+
+  @Put('modified-number')
+  @UseGuards(JwtAuthGuard)
+  // @ApiOkResponse({ type: PersonalRecords })
+  @ApiBearerAuth()
+  async resetModifiedNumber(
+    @Req() req: IRequestWithUserPayload,
+  ): Promise<boolean> {
+    const recordsData = await this.recordsService.resetModifiedNumber(
+      req.user.id,
+    )
+    return recordsData
   }
 }

@@ -6,7 +6,6 @@ import {
 } from '@nestjs/common'
 import { IGetAllQueries } from '../handlers/interfaces/get-all-queries.interface'
 import { InjectModel } from '@nestjs/mongoose'
-import { v4 } from 'uuid'
 import { Model } from 'mongoose'
 import { UpdateResult } from 'mongodb'
 import { Appointment, AppointmentDocument } from './schemas/appointment.schema'
@@ -16,15 +15,14 @@ import {
 } from './schemas/time-template.schema'
 import { IDateSearchRange } from './interfaces/date-search-range.interface'
 import { CreateTimeDto } from './dtos/create-time.dto'
-import { UpdateAppointmentDto } from './dtos/update-appointment.dto'
 import { IHandleSort } from '../handlers/interfaces/handle-sort.interface'
 import { AppointmentsCell } from './schemas/appointments-cell.schema'
 import { UpdateAppointmentPatientsDto } from './dtos/update-appointment-patients.dto'
 import { RecordsService } from '../records/records.service'
-import { Patients } from './schemas/patients.schema'
 import { IDeletePatient } from './interfaces/delete-patient.interface'
 import { AppointmentsType } from '../common/types/appointments-type.type'
 import { RecordDocument } from '../records/schemas/record.schema'
+import { MailService } from '../mail/mail.service'
 
 @Injectable()
 export class AppointmentsService {
@@ -35,6 +33,7 @@ export class AppointmentsService {
     private readonly timeTemplateModel: Model<TimeTemplateDocument>,
     @Inject(forwardRef(() => RecordsService))
     private readonly recordsService: RecordsService,
+    private readonly mailService: MailService,
   ) {}
 
   async getAppointments(
@@ -120,7 +119,10 @@ export class AppointmentsService {
             newRecord._id,
           )
 
-          if (existingRecord.userId !== newRecord.userId) {
+          if (
+            String(existingRecord.userId) !== newRecord.userId ||
+            new Date(existingRecord.time) !== new Date(newRecord.time)
+          ) {
             const record = await this.createAndAddUpcomingRecord(
               date,
               newAppointments[i].time,
@@ -202,6 +204,7 @@ export class AppointmentsService {
 
   async updateAppointmentPatients(
     updateAppointmentPatients: UpdateAppointmentPatientsDto,
+    email: string,
   ): Promise<AppointmentDocument> {
     let app = await this.appointmentModel.findOne({
       date: new Date(updateAppointmentPatients.date),
@@ -236,6 +239,8 @@ export class AppointmentsService {
       record: rec._id,
       userId: updateAppointmentPatients.userId,
     })
+
+    // await this.mailService.sendSuccessMail(email, rec.date, rec.time)
 
     return app.save()
   }

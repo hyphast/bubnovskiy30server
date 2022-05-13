@@ -15,6 +15,7 @@ import { v4 } from 'uuid'
 import { CreateRecordDto } from './dtos/create-record.dto'
 import { IDeleteRecord } from './interfaces/delete-record.interface'
 import { UsersService } from '../users/users.service'
+import { UpdateResult } from 'mongodb'
 
 @Injectable()
 export class RecordsService {
@@ -136,8 +137,21 @@ export class RecordsService {
     })
 
     const userData = await this.incModifiedNumber(addRecordDto.userId)
-    console.log(userData)
 
     return rec.save()
+  }
+
+  async resetModifiedNumber(userId: string): Promise<boolean> {
+    const personalRecords = await this.findPersonalRecordsByUserId(userId)
+
+    if (!personalRecords) {
+      throw new BadRequestException('Не существует')
+    }
+
+    personalRecords.modifiedNumber = 0
+
+    await personalRecords.save()
+
+    return true
   }
 }

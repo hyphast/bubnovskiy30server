@@ -12,11 +12,12 @@ import { ProfileService } from './profile.service'
 import { IRequestWithUserPayload } from '../auth/interfaces/request-with-user-payload.dto'
 import { IGetUserProfilePayload } from './interfaces/get-user-profile-payload.interface'
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard'
-import { ApiBearerAuth } from '@nestjs/swagger'
+import { ApiBearerAuth, ApiTags } from '@nestjs/swagger'
 import { ResponseDto } from '../common/response.dto'
 import { EditProfileInfoDto } from './dtos/edit-profile-info.dto'
 import { FileInterceptor } from '@nestjs/platform-express'
 
+@ApiTags('Profile')
 @Controller('profile')
 export class ProfileController {
   constructor(private readonly profileService: ProfileService) {}

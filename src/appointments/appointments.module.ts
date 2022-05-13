@@ -8,6 +8,7 @@ import {
   TimeTemplate,
   TimeTemplateSchema,
 } from './schemas/time-template.schema'
+import { MailModule } from '../mail/mail.module'
 
 @Module({
   imports: [
@@ -18,6 +19,7 @@ import {
       { name: TimeTemplate.name, schema: TimeTemplateSchema },
     ]),
     forwardRef(() => RecordsModule),
+    MailModule,
   ],
   controllers: [AppointmentsController],
   providers: [AppointmentsService],
