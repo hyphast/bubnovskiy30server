@@ -1,0 +1,60 @@
+version: "3.7"
+services:
+  server:
+    container_name: server
+    build:
+      context: .
+      target: development
+    command: npm run start:dev
+    volumes:
+      - .:/usr/src/app
+      - /usr/src/app/node_modules
+    ports:
+      - 5000:5000
+    env_file:
+      - .development.env
+    networks:
+      - mnrn-app
+    depends_on:
+      - mongo
+  web-client:
+    container_name: web-client
+    build:
+      context: ../bubnovskiy30
+      dockerfile: Dockerfile.dev
+#    stdin_open: trues
+#    tty: true
+    volumes:
+      - ../bubnovskiy30/src:/usr/src/app/src
+      - /usr/src/app/node_modules
+    environment:
+      - CHOKIDAR_USEPOLLING=true
+    ports:
+      - 3000:3000
+    env_file:
+      - ../bubnovskiy30/.env
+    networks:
+      - mnrn-app
+    depends_on:
+      - server
+  mongo:
+    container_name: mongo
+    image: mongo:5.0.6
+    environment:
+      MONGO_INITDB_DATABASE: "bubnovskiy"
+#      MONGO_INITDB_ROOT_USERNAME: "admin"
+#      MONGO_INITDB_ROOT_PASSWORD: "admin"
+    ports:
+      - 27018:27017
+    networks:
+      - mnrn-app
+    volumes:
+      - mongo-data:/data/db
+      - ./docker-entrypoint-initdb.d/mongo-init.js:/docker-entrypoint-initdb.d/mongo-init.js:ro
+networks:
+  mnrn-app:
+    driver: bridge
+
+volumes:
+  mongo-data:
+    driver: local

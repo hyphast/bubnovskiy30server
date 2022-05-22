@@ -1,6 +1,7 @@
 import { forwardRef, Inject, Injectable } from '@nestjs/common'
 import { Model } from 'mongoose'
 import { InjectModel } from '@nestjs/mongoose'
+import compareDesc from 'date-fns/compareDesc'
 import {
   PersonalRecords,
   PersonalRecordsDocument,
@@ -16,6 +17,7 @@ import { CreateRecordDto } from './dtos/create-record.dto'
 import { IDeleteRecord } from './interfaces/delete-record.interface'
 import { UsersService } from '../users/users.service'
 import { UpdateResult } from 'mongodb'
+import { IPopulatedPersonalRecords } from './interfaces/populated-personal-records.interface'
 
 @Injectable()
 export class RecordsService {
@@ -39,6 +41,23 @@ export class RecordsService {
     return recs
   }
 
+  async deleteExpiredRecords(recs: IPopulatedPersonalRecords) {
+    const date = new Date()
+    const curDateTs = new Date(
+      Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()),
+    ).getTime()
+    for (const item of recs.upcomingRecords) {
+      const recDateTs = new Date(item.record.date).getTime()
+      if (recDateTs <= curDateTs) {
+        await this.deleteRecord(
+          item.record.userId,
+          item.record._id,
+          'Завершена',
+        )
+      }
+    }
+  }
+
   async getRecords(id: string): Promise<IGetUpcomingRecords> {
     const recs = await this.findPersonalRecordsByUserId(id)
 
@@ -54,6 +73,12 @@ export class RecordsService {
 
     await recs.populate('upcomingRecords.record')
     await recs.populate('finishedRecords.record')
+
+    //Clean up deleted records
+    recs.upcomingRecords = recs.upcomingRecords.filter((item) => item.record)
+    await recs.save()
+
+    await this.deleteExpiredRecords(recs as any)
 
     const recordsDto = new RecordPayloadDto(recs)
 

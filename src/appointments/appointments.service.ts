@@ -61,6 +61,18 @@ export class AppointmentsService {
     const appointment = await this.appointmentModel
       .findById(id)
       .populate('appointments.patients.record')
+
+    //Clean up deleted records
+    appointment.appointments.forEach((_, i) => {
+      appointment.appointments[i].patients = appointment.appointments[
+        i
+      ].patients.filter((item) => item.record)
+    })
+    appointment.numberAllPatients = this.calcNumberAllPatients(
+      appointment.appointments,
+    )
+    await appointment.save()
+
     return appointment
   }
 
@@ -121,7 +133,8 @@ export class AppointmentsService {
 
           if (
             String(existingRecord.userId) !== newRecord.userId ||
-            new Date(existingRecord.time) !== new Date(newRecord.time)
+            new Date(existingRecord.time).getTime() !==
+              new Date(newAppointments[i].time).getTime()
           ) {
             const record = await this.createAndAddUpcomingRecord(
               date,

@@ -51,11 +51,14 @@ export class Record {
   })
   modifiedDate: string | Date
 
-  // @Prop({ type: Date, expires: 20, default: Date }) //TODO expires: 15 638 400 !!!!!
+  // @Prop({ type: Date }) //TODO expires: 15 638 400 !!!!!
   // @ApiProperty({
   //   example: '2021-11-11T07:50:27.000+00:00',
   //   description: 'Modified date of record',
   // })
-  // expireAt: string | Date
+  // createdAt: string | Date
 }
+
 export const RecordSchema = SchemaFactory.createForClass(Record)
+
+RecordSchema.index({ modifiedDate: 1 }, { expireAfterSeconds: 3600 }) //TODO expires: 15 638 400 !!!!!

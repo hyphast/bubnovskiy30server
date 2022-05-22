@@ -1,0 +1,49 @@
+version: "3.7"
+services:
+  server:
+    container_name: server
+    build:
+      context: .
+    ports:
+      - 5000:5000
+    env_file:
+      - .production.env
+    networks:
+      - mnrn-app
+    restart: always
+    depends_on:
+      - mongo
+  web-client:
+    container_name: web-client
+    build:
+      context: ../bubnovskiy30
+      dockerfile: Dockerfile.prod
+    ports:
+      - 8080:80
+    env_file:
+      - ../bubnovskiy30/.env
+    networks:
+      - mnrn-app
+    restart: always
+    depends_on:
+      - server
+  mongo:
+    container_name: mongo
+    image: mongo:5.0.6
+    environment:
+      MONGO_INITDB_DATABASE: "bubnovskiy"
+      MONGO_INITDB_ROOT_USERNAME: "admin"
+      MONGO_INITDB_ROOT_PASSWORD: "admin"
+    ports:
+      - 27017:27017
+    networks:
+      - mnrn-app
+    volumes:
+      - mongo-data:/data/db
+networks:
+  mnrn-app:
+    driver: bridge
+
+volumes:
+  mongo-data:
+    driver: local
