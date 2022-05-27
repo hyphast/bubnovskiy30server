@@ -9,10 +9,12 @@ const whitelist = [
   'http://localhost:3000',
   'http://localhost:3001',
   'http://localhost:8080',
+  'http://localhost',
 ]
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule)
+  app.setGlobalPrefix('api')
   app.enableCors({
     credentials: true,
     exposedHeaders: 'Content-Range',

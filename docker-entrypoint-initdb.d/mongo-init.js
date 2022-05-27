@@ -1,8 +1,10 @@
-print("Started adding the users.");
-db = db.getSiblingDB("admin");
 db.createUser({
-  user: process.env.dbuser,
-  pwd: process.env.dbpwd,
-  roles: [{ role: "readWrite", db: "admin" }],
-});
-print("End adding the user roles.");
+  user: process.env.MONGO_INITDB_ROOT_USERNAME,
+  pwd: process.env.MONGO_INITDB_ROOT_PASSWORD,
+  roles: [
+    {
+      role: 'readWrite',
+      db: process.env.MONGO_INITDB_DATABASE,
+    },
+  ],
+})

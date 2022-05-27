@@ -1,45 +1,68 @@
 version: "3.7"
 services:
-  server:
-    container_name: server
+  nginx:
+    container_name: nginx
+    restart: always
+    build:
+      dockerfile: Dockerfile
+      context: ./nginx
+    ports:
+      - 80:80
+      - 8080:8080
+    networks:
+      - mnrn-app
+    depends_on:
+      - web-client
+      - backend
+  backend:
+    container_name: backend
+    restart: on-failure
     build:
       context: .
-    ports:
-      - 5000:5000
     env_file:
       - .production.env
     networks:
       - mnrn-app
-    restart: always
     depends_on:
       - mongo
   web-client:
     container_name: web-client
+    restart: on-failure
     build:
       context: ../bubnovskiy30
       dockerfile: Dockerfile.prod
-    ports:
-      - 8080:80
     env_file:
-      - ../bubnovskiy30/.env
+      - ../bubnovskiy30/.env.production
     networks:
       - mnrn-app
-    restart: always
     depends_on:
-      - server
+      - backend
+  admin-client:
+    container_name: admin-client
+    build:
+      context: ../bubnovskiy-react-admin
+      dockerfile: Dockerfile.prod
+    env_file:
+      - ../bubnovskiy-react-admin/.env.production
+    networks:
+      - mnrn-app
+    depends_on:
+      - backend
   mongo:
     container_name: mongo
     image: mongo:5.0.6
+    env_file: .production.env
     environment:
-      MONGO_INITDB_DATABASE: "bubnovskiy"
-      MONGO_INITDB_ROOT_USERNAME: "admin"
-      MONGO_INITDB_ROOT_PASSWORD: "admin"
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_INITDB_ROOT_USERNAME}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_INITDB_ROOT_PASSWORD}
+      MONGO_INITDB_DATABASE: ${MONGO_INITDB_DATABASE}
     ports:
-      - 27017:27017
+      - 27018:27017
     networks:
       - mnrn-app
     volumes:
       - mongo-data:/data/db
+      - ./docker-entrypoint-initdb.d/mongo-init.js:/docker-entrypoint-initdb.d/mongo-init.js:ro
 networks:
   mnrn-app:
     driver: bridge

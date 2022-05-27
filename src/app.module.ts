@@ -22,6 +22,7 @@ import { ServeStaticModule } from '@nestjs/serve-static'
     }),
     ServeStaticModule.forRoot({
       rootPath: path.resolve(__dirname, 'static'),
+      serveRoot: '/api',
     }),
     MongooseModule.forRoot(process.env.mongoUri),
     MailerModule.forRoot({

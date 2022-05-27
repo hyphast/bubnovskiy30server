@@ -1,7 +1,7 @@
 version: "3.7"
 services:
-  server:
-    container_name: server
+  backend:
+    container_name: backend
     build:
       context: .
       target: development
@@ -22,8 +22,6 @@ services:
     build:
       context: ../bubnovskiy30
       dockerfile: Dockerfile.dev
-#    stdin_open: trues
-#    tty: true
     volumes:
       - ../bubnovskiy30/src:/usr/src/app/src
       - /usr/src/app/node_modules
@@ -36,14 +34,33 @@ services:
     networks:
       - mnrn-app
     depends_on:
-      - server
+      - backend
+  admin-client:
+    container_name: admin-client
+    build:
+      context: ../bubnovskiy-react-admin
+      dockerfile: Dockerfile.dev
+    volumes:
+      - ../bubnovskiy-react-admin/src:/usr/src/app/src
+      - /usr/src/app/node_modules
+    environment:
+      - CHOKIDAR_USEPOLLING=true
+    ports:
+      - 3001:3001
+    env_file:
+      - ../bubnovskiy-react-admin/.env
+    networks:
+      - mnrn-app
+    depends_on:
+      - backend
   mongo:
     container_name: mongo
     image: mongo:5.0.6
+    env_file: .development.env
     environment:
-      MONGO_INITDB_DATABASE: "bubnovskiy"
-#      MONGO_INITDB_ROOT_USERNAME: "admin"
-#      MONGO_INITDB_ROOT_PASSWORD: "admin"
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_INITDB_ROOT_USERNAME}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_INITDB_ROOT_PASSWORD}
+      MONGO_INITDB_DATABASE: ${MONGO_INITDB_DATABASE}
     ports:
       - 27018:27017
     networks:
