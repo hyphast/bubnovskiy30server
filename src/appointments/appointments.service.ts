@@ -63,11 +63,11 @@ export class AppointmentsService {
       .populate('appointments.patients.record')
 
     //Clean up deleted records
-    appointment.appointments.forEach((_, i) => {
-      appointment.appointments[i].patients = appointment.appointments[
-        i
-      ].patients.filter((item) => item.record)
-    })
+    // appointment.appointments.forEach((_, i) => {
+    //   appointment.appointments[i].patients = appointment.appointments[
+    //     i
+    //   ].patients.filter((item) => item.record)
+    // })
     appointment.numberAllPatients = this.calcNumberAllPatients(
       appointment.appointments,
     )

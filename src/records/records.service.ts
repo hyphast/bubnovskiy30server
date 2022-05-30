@@ -61,6 +61,8 @@ export class RecordsService {
   async getRecords(id: string): Promise<IGetUpcomingRecords> {
     const recs = await this.findPersonalRecordsByUserId(id)
 
+    console.log(recs)
+
     if (!recs) {
       return {
         records: {
@@ -74,11 +76,11 @@ export class RecordsService {
     await recs.populate('upcomingRecords.record')
     await recs.populate('finishedRecords.record')
 
-    //Clean up deleted records
-    recs.upcomingRecords = recs.upcomingRecords.filter((item) => item.record)
-    await recs.save()
+    //Clean up deleted records //TODO refactor!
+    //recs.upcomingRecords = recs.upcomingRecords.filter((item) => item.record)
+    //await recs.save()
 
-    await this.deleteExpiredRecords(recs as any)
+    //await this.deleteExpiredRecords(recs as any) //TODO Refactor!!1
 
     const recordsDto = new RecordPayloadDto(recs)
 

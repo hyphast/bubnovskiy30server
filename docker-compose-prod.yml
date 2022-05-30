@@ -3,9 +3,10 @@ services:
   nginx:
     container_name: nginx
     restart: always
-    build:
-      dockerfile: Dockerfile
-      context: ./nginx
+#    build:
+#      dockerfile: Dockerfile
+#      context: ./nginx
+    image: hyphast/bub30nginx
     ports:
       - 80:80
       - 8080:8080
@@ -17,8 +18,9 @@ services:
   backend:
     container_name: backend
     restart: on-failure
-    build:
-      context: .
+#    build:
+#      context: .
+    image: hyphast/bub30server
     env_file:
       - .production.env
     networks:
@@ -28,9 +30,10 @@ services:
   web-client:
     container_name: web-client
     restart: on-failure
-    build:
-      context: ../bubnovskiy30
-      dockerfile: Dockerfile.prod
+#    build:
+#      context: ../bubnovskiy30
+#      dockerfile: Dockerfile.prod
+    image: hyphast/bub30web
     env_file:
       - ../bubnovskiy30/.env.production
     networks:
@@ -39,9 +42,10 @@ services:
       - backend
   admin-client:
     container_name: admin-client
-    build:
-      context: ../bubnovskiy-react-admin
-      dockerfile: Dockerfile.prod
+#    build:
+#      context: ../bubnovskiy-react-admin
+#      dockerfile: Dockerfile.prod
+    image: hyphast/bub30admin
     env_file:
       - ../bubnovskiy-react-admin/.env.production
     networks:

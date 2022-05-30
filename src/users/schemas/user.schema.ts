@@ -9,7 +9,7 @@ export class User {
   @Prop({ default: '' })
   @ApiProperty({
     example:
-      'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAOEAAADhCAYAAAA+s9J6AAAAAXNSR0IArs4c6QAAEiVJREFUeF7tn/OECEdhg90S/',
+      'iVBORw0KGgoAAAANSUhEUgAAAOEAAADhCAYAAAA+s9J6AAAAAXNSR0IArs4c6QAAEiVJREFUeF7tn/OECEdhg90S',
     description: 'User photo',
   })
   photoUrl?: string
