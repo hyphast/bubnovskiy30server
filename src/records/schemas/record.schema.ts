@@ -61,4 +61,4 @@ export class Record {
 
 export const RecordSchema = SchemaFactory.createForClass(Record)
 
-RecordSchema.index({ modifiedDate: 1 }, { expireAfterSeconds: 3600 }) //TODO expires: 15 638 400 !!!!!
+// RecordSchema.index({ modifiedDate: 1 }, { expireAfterSeconds: 3600 }) //TODO expires: 15 638 400 !!!!!

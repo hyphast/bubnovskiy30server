@@ -10,6 +10,8 @@ const whitelist = [
   'http://localhost:3001',
   'http://localhost:8080',
   'http://localhost',
+  'http://bubnovsky30.hopto.org',
+  'http://bubnovsky30admin.hopto.org',
 ]
 
 async function bootstrap() {
@@ -28,7 +30,7 @@ async function bootstrap() {
     },
   })
 
-  app.use(helmet({ crossOriginResourcePolicy: { policy: 'same-site' } })) //TODO It may cause problems!
+  app.use(helmet({ crossOriginResourcePolicy: { policy: 'cross-origin' } })) //TODO It may cause problems!
   app.use(cookieParser())
   app.useGlobalPipes(new ValidationPipe())
 
