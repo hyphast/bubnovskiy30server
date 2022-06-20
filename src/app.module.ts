@@ -13,6 +13,7 @@ import { RecordsModule } from './records/records.module'
 import { ProfileModule } from './profile/profile.module'
 import { FilesModule } from './files/files.module'
 import { ServeStaticModule } from '@nestjs/serve-static'
+import { google } from 'googleapis'
 
 @Module({
   imports: [
@@ -25,18 +26,33 @@ import { ServeStaticModule } from '@nestjs/serve-static'
       serveRoot: '/api',
     }),
     MongooseModule.forRoot(process.env.mongoUri),
-    MailerModule.forRoot({
-      transport: {
-        host: process.env.smtpHost,
-        port: parseInt(process.env.smtpPort),
-        secure: false,
-        auth: {
-          user: process.env.smtpUser,
-          pass: process.env.smtpPassword,
-        },
-      },
-      defaults: {
-        from: process.env.smtpUser,
+    MailerModule.forRootAsync({
+      useFactory: async () => {
+        const OAuth2Client = new google.auth.OAuth2(
+          process.env.smtpClientId,
+          process.env.smtpClientSecret,
+          process.env.smtpRedirectUri,
+        )
+        OAuth2Client.setCredentials({
+          refresh_token: process.env.smtpRefreshToken,
+        })
+        const accessToken = await OAuth2Client.getAccessToken()
+        return {
+          transport: {
+            service: 'gmail',
+            auth: {
+              type: 'OAuth2',
+              user: process.env.smtpEmail,
+              clientId: process.env.smtpClientId,
+              clientSecret: process.env.smtpClientSecret,
+              refreshToken: process.env.smtpRefreshToken,
+              accessToken: accessToken.token,
+            },
+          },
+          defaults: {
+            from: process.env.smtpUser,
+          },
+        }
       },
     }),
     AuthModule,

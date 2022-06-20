@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common'
 import { MailerService } from '@nestjs-modules/mailer'
+import { google, Auth } from 'googleapis'
 
 @Injectable()
 export class MailService {
@@ -12,6 +13,7 @@ export class MailService {
       text: '',
       html: `
         <div>
+            {/*<img src={BubnovskiyImg} alt="Центр Бубновского занятия"/>*/}
             <h1>Для активации личного кабинета перейдите по ссылке ниже</h1>
             <a href='${link}'>${link}</a>
         </div>

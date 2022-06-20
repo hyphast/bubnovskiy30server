@@ -270,11 +270,11 @@ export class AppointmentsService {
       throw new BadRequestException('Ошибка сервера')
     }
 
-    const appointmentIndex = app.appointments.findIndex(
-      (item) =>
-        new Date(item.time).getTime() ===
-        new Date(deletePatient.time).getTime(),
-    )
+    const appointmentIndex = app.appointments.findIndex((item) => {
+      return (
+        new Date(item.time).getTime() === new Date(deletePatient.time).getTime()
+      )
+    })
 
     const patientIndex = app.appointments[appointmentIndex].patients.findIndex(
       (item) => String(item.record) === deletePatient.record,
